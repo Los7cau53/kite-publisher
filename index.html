@@ -37,7 +37,21 @@
             const dataStr = params.get('data');
 
             if (!apiKey || !dataStr) {
-                document.getElementById('content').innerHTML = '<p class="error">Invalid order link — missing parameters.</p>';
+                // Kite redirects here after order confirm/cancel — show status
+                const status = params.get('status');
+                if (status === 'success') {
+                    document.getElementById('content').innerHTML =
+                        '<p style="color:#00c853;text-align:center;padding:20px;font-size:18px;">Order sent to Kite!</p>' +
+                        '<p class="note">Check your Kite app for order status.</p>';
+                } else if (status) {
+                    document.getElementById('content').innerHTML =
+                        '<p style="color:#ff9800;text-align:center;padding:20px;">Order was cancelled or failed.</p>' +
+                        '<p class="note">Go back to Telegram to retry.</p>';
+                } else {
+                    document.getElementById('content').innerHTML =
+                        '<p style="color:#00c853;text-align:center;padding:20px;font-size:18px;">Order submitted!</p>' +
+                        '<p class="note">Check your Kite app for order status. You can close this tab.</p>';
+                }
                 return;
             }
 
