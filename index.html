@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrdApp — Kite Order</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { background: #16213e; border-radius: 12px; padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        h2 { color: #e94560; margin-bottom: 16px; font-size: 18px; }
+        .order-info { background: #0f3460; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+        .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+        .label { color: #888; }
+        .value { font-weight: 600; }
+        .buy { color: #00c853; }
+        .sell { color: #ff1744; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-buy { background: #00c853; color: #fff; }
+        .btn-sell { background: #ff1744; color: #fff; }
+        .btn-loading { background: #555; color: #999; cursor: wait; }
+        .note { margin-top: 16px; font-size: 11px; color: #666; text-align: center; }
+        .error { color: #ff1744; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card" id="card">
+        <h2>TrdApp Order</h2>
+        <div id="content"><p class="error">Loading...</p></div>
+    </div>
+
+    <script>
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const apiKey = params.get('api_key');
+            const dataStr = params.get('data');
+
+            if (!apiKey || !dataStr) {
+                document.getElementById('content').innerHTML = '<p class="error">Invalid order link — missing parameters.</p>';
+                return;
+            }
+
+            let orders;
+            try {
+                orders = JSON.parse(dataStr);
+            } catch(e) {
+                document.getElementById('content').innerHTML = '<p class="error">Invalid order data.</p>';
+                return;
+            }
+
+            if (!orders.length) {
+                document.getElementById('content').innerHTML = '<p class="error">No orders in basket.</p>';
+                return;
+            }
+
+            // Show order details + confirm button
+            const order = orders[0];
+            const isBuy = order.transaction_type === 'BUY';
+            const sideClass = isBuy ? 'buy' : 'sell';
+
+            let html = '<div class="order-info">';
+            html += `<div class="row"><span class="label">Action</span><span class="value ${sideClass}">${order.transaction_type}</span></div>`;
+            html += `<div class="row"><span class="label">Symbol</span><span class="value">${order.tradingsymbol}</span></div>`;
+            html += `<div class="row"><span class="label">Exchange</span><span class="value">${order.exchange}</span></div>`;
+            html += `<div class="row"><span class="label">Qty</span><span class="value">${order.quantity}</span></div>`;
+            html += `<div class="row"><span class="label">Type</span><span class="value">${order.order_type}</span></div>`;
+            html += `<div class="row"><span class="label">Product</span><span class="value">${order.product}</span></div>`;
+            if (order.price) {
+                html += `<div class="row"><span class="label">Price</span><span class="value">${order.price}</span></div>`;
+            }
+            html += '</div>';
+            html += `<button class="btn btn-${isBuy ? 'buy' : 'sell'}" id="submitBtn" onclick="submitOrder()">`;
+            html += `${order.transaction_type} ${order.tradingsymbol} x${order.quantity}`;
+            html += '</button>';
+            html += '<p class="note">Opens Kite to confirm. Login if prompted.</p>';
+
+            document.getElementById('content').innerHTML = html;
+
+            // Hidden form for POST submission
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://kite.zerodha.com/connect/basket';
+            form.style.display = 'none';
+
+            const keyInput = document.createElement('input');
+            keyInput.name = 'api_key';
+            keyInput.value = apiKey;
+            form.appendChild(keyInput);
+
+            const dataInput = document.createElement('input');
+            dataInput.name = 'data';
+            dataInput.value = dataStr;
+            form.appendChild(dataInput);
+
+            document.body.appendChild(form);
+
+            window.submitOrder = function() {
+                const btn = document.getElementById('submitBtn');
+                btn.className = 'btn btn-loading';
+                btn.textContent = 'Opening Kite...';
+                btn.disabled = true;
+                form.submit();
+            };
+        })();
+    </script>
+</body>
+</html>
